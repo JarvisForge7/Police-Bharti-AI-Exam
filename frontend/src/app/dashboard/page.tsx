@@ -16,6 +16,30 @@ import {
   Zap
 } from 'lucide-react';
 
+// 🟢 SAFE API FALLBACK: बॅकएंड किंवा lib/api फाईल नसेल तरीही कोड क्रॅश होणार नाही
+const api = {
+  getPapers: async () => {
+    try {
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+      const res = await fetch(`${baseUrl}/api/papers`);
+      if (!res.ok) throw new Error("API network error");
+      return await res.json();
+    } catch {
+      return { success: false, data: [] };
+    }
+  },
+  getAnalytics: async () => {
+    try {
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+      const res = await fetch(`${baseUrl}/api/analytics`);
+      if (!res.ok) throw new Error("API network error");
+      return await res.json();
+    } catch {
+      return { success: false, data: null };
+    }
+  }
+};
+
 interface Paper {
   id: number;
   title: string;
@@ -47,10 +71,10 @@ export default function StudentDashboard() {
           api.getAnalytics(),
         ]);
 
-        if (papersRes.success) {
-          setPapers(papersRes.data || []);
+        if (papersRes && papersRes.success && papersRes.data) {
+          setPapers(papersRes.data);
         } else {
-          // Dummy papers for fallback/preview if database is empty
+          // Database/API उपलब्ध नसल्यास डमी पेपर्स
           setPapers([
             { id: 1, title: 'पुणे जिल्हा पोलीस भरती २०२६ सराव पेपर ०१', total_marks: 100, duration_minutes: 90, district: 'पुणे', year: 2026 },
             { id: 2, title: 'मुंबई शहर पोलीस शिपाई भरती २०२४ मूळ पेपर', total_marks: 100, duration_minutes: 90, district: 'मुंबई', year: 2024 },
@@ -58,7 +82,7 @@ export default function StudentDashboard() {
           ]);
         }
 
-        if (analyticsRes.success) {
+        if (analyticsRes && analyticsRes.success) {
           setAnalytics(analyticsRes.data);
         }
       } catch (err) {
