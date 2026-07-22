@@ -1,5 +1,5 @@
 "use client";
-import { api } from '@/lib/api';
+import api from '@/lib/api'; // (ब्रॅकेट्स {} काढून पहा)
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 
