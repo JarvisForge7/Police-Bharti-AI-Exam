@@ -31,9 +31,9 @@ export default function StudentDashboard() {
   useEffect(() => {
     const fetchStudentData = async () => {
       try {
-        // समजा लॉग-इन असलेल्या विद्यार्थ्याचा ID '1' आहे
         const studentId = 1; 
-        const res = await fetch(`http://localhost:5000/api/student/dashboard/${studentId}`);
+        const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+        const res = await fetch(`${baseUrl}/api/student/dashboard/${studentId}`);
         const result = await res.json();
         
         if (result.success) {
