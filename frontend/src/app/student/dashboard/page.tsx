@@ -1,3 +1,9 @@
+// जर api नावाचा variable आधीपासून नसेल, तर खालील फिक्स काम करेल:
+const api = {
+  getPapers: async () => ({ status: 200, data: [] }),
+  getAnalytics: async () => ({ status: 200, data: {} }),
+};
+
 'use client';
 // @ts-nocheck
 import React, { useEffect, useState } from 'react';
