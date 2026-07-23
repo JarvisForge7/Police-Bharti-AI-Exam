@@ -7,7 +7,6 @@ import {
   ChevronLeft, ChevronRight, Bookmark, Calculator, CheckCircle 
 } from 'lucide-react';
 
-// 🚨 तुमच्या बॅकएंडचा पोर्ट इथे सेट करा (उदा. 5000 किंवा 8000)
 const BACKEND_URL = 'http://localhost:5000';
 
 interface Question {
@@ -24,8 +23,11 @@ interface PaletteStatus {
 }
 
 export default function RealExamEnvironment() {
-  const { paperId } = useParams();
+  const params = useParams();
   const router = useRouter();
+  
+  // 💡 फिक्स: जर URL मध्ये paperId नसेल (उदा. होमपेज), तर डिफॉल्ट १ घ्या
+  const paperId = params?.paperId || 1; 
 
   // State Management
   const [questions, setQuestions] = useState<Question[]>([]);
@@ -41,7 +43,7 @@ export default function RealExamEnvironment() {
 
   const userId = 1; // टेस्टसाठी तात्पुरता युझर आयडी १
 
-  // 1. 🔄 डेटाबेसमधून खरे प्रश्न आणि जुनी प्रोग्रेस लोड करणे (Resume Feature)
+  // 1. 🔄 डेटाबेसमधून खरे प्रश्न आणि जुनी प्रोग्रेस लोड करणे
   useEffect(() => {
     const fetchExamData = async () => {
       try {
@@ -58,7 +60,6 @@ export default function RealExamEnvironment() {
           setQuestions(data.questions);
           setTimeLeft(data.timeLeftSeconds);
 
-          // प्रोग्रेस रिझ्युम करणे (Resume Testing)
           const initialPalette: Record<number, PaletteStatus> = {};
           data.questions.forEach((q: any, idx: number) => {
             const savedProgress = data.savedAnswers?.[q.id];
@@ -80,11 +81,13 @@ export default function RealExamEnvironment() {
         console.error("❌ Fetch Error:", err);
         alert("बॅकएंड सर्व्हर बंद आहे किंवा कनेक्शन प्रॉब्लेम आहे!");
       } finally {
+        // 💡 हा सर्वात महत्त्वाचा भाग: काहीही झाले तरी लोडिंग थांबवा!
         setLoading(false);
       }
     };
 
-    if (paperId) fetchExamData();
+    // 💡 फिक्स: आता हे नेहमी रन होईल आणि लोडिंग स्क्रीन अडकणार नाही
+    fetchExamData();
   }, [paperId]);
 
   // 2. ⏳ लाईव्ह टायमर आणि ऑटो-सबमिट
@@ -133,7 +136,6 @@ export default function RealExamEnvironment() {
   const handleOptionSelect = async (optIdx: number) => {
     const currentQuestion = questions[currentIdx];
     
-    // आधी फ्रंटएंडचा स्टेट बदलूया जेणेकरून UI स्मूथ चालेल
     setPalette(prev => ({
       ...prev,
       [currentIdx]: { ...prev[currentIdx], selectedOption: optIdx, status: 'Answered' }
@@ -158,7 +160,7 @@ export default function RealExamEnvironment() {
     }
   };
 
-  // 5. 🛑 फायनल सबमिट आणि गुण मोजणी (1/4 निगेटिव्ह मार्किंगसह)
+  // 5. 🛑 फायनल सबमिट आणि गुण मोजणी
   const triggerAutoSubmit = async () => {
     if (isSubmitting) return;
     setIsSubmitting(true);
@@ -179,7 +181,7 @@ export default function RealExamEnvironment() {
         setIsSubmitting(false);
       }
     } catch (err) {
-      console.error("❌ सबमिशन एरer:", err);
+      console.error("❌ सबमिशन एरर:", err);
       alert("सर्व्हर एररमुळे परीक्षा सबमिट होऊ शकली नाही!");
       setIsSubmitting(false);
     }
@@ -250,6 +252,7 @@ export default function RealExamEnvironment() {
   };
 
   const handlePrev = () => { if (currentIdx > 0) setCurrentIdx(currentIdx - 1); };
+  
   const formatTime = (seconds: number) => {
     const h = Math.floor(seconds / 3600);
     const m = Math.floor((seconds % 3600) / 60);
@@ -300,24 +303,26 @@ export default function RealExamEnvironment() {
       </header>
 
       <div className="h-1.5 w-full bg-slate-800 flex">
-        <div style={{ width: `${(answered/total)*100}%` }} className="bg-emerald-500 transition-all duration-300"></div>
-        <div style={{ width: `${(reviewed/total)*100}%` }} className="bg-purple-500 transition-all duration-300"></div>
-        <div style={{ width: `${(skipped/total)*100}%` }} className="bg-amber-500 transition-all duration-300"></div>
+        <div style={{ width: `${total ? (answered/total)*100 : 0}%` }} className="bg-emerald-500 transition-all duration-300"></div>
+        <div style={{ width: `${total ? (reviewed/total)*100 : 0}%` }} className="bg-purple-500 transition-all duration-300"></div>
+        <div style={{ width: `${total ? (skipped/total)*100 : 0}%` }} className="bg-amber-500 transition-all duration-300"></div>
       </div>
 
       <div className="flex-1 flex overflow-hidden">
         <div className="flex-1 flex flex-col p-6 overflow-y-auto">
           <div className="flex justify-between items-center mb-4 border-b border-slate-800 pb-3">
-            <span className="px-3 py-1 bg-slate-800 rounded text-xs font-semibold text-slate-300 uppercase">विषय: {questions[currentIdx]?.subject}</span>
-            <span className="text-sm font-medium text-slate-400">प्रश्न: <span className="text-white text-base font-bold">{currentIdx + 1}</span> / {total}</span>
+            <span className="px-3 py-1 bg-slate-800 rounded text-xs font-semibold text-slate-300 uppercase">विषय: {questions[currentIdx]?.subject || "सामान्य ज्ञान"}</span>
+            <span className="text-sm font-medium text-slate-400">प्रश्न: <span className="text-white text-base font-bold">{questions.length > 0 ? currentIdx + 1 : 0}</span> / {total}</span>
           </div>
 
           <div className="bg-slate-900/60 border border-slate-800/80 rounded-xl p-6 mb-6 min-h-[140px]">
-            <p className="text-lg leading-relaxed text-slate-100 font-medium">{questions[currentIdx]?.question_text}</p>
+            <p className="text-lg leading-relaxed text-slate-100 font-medium">
+              {questions[currentIdx]?.question_text || "बॅकएंड सर्व्हर चालू नसल्यामुळे प्रश्न लोड झालेले नाहीत. कृपया बॅकएंड सर्व्हर सुरू करा."}
+            </p>
           </div>
 
           <div className="space-y-3 flex-1">
-            {questions[currentIdx]?.options.map((option, oIdx) => {
+            {questions[currentIdx]?.options?.map((option, oIdx) => {
               const isSelected = palette[currentIdx]?.selectedOption === oIdx;
               return (
                 <button key={oIdx} onClick={() => handleOptionSelect(oIdx)} className={`w-full text-left px-5 py-4 rounded-xl border transition-all duration-150 flex items-center gap-4 ${isSelected ? 'bg-blue-600/20 border-blue-500 text-blue-300 shadow-md ring-1 ring-blue-500' : 'bg-slate-900 border-slate-800 hover:border-slate-700 hover:bg-slate-850 text-slate-300'}`}>
@@ -330,12 +335,12 @@ export default function RealExamEnvironment() {
 
           <div className="flex justify-between items-center mt-6 border-t border-slate-800 pt-4">
             <div className="flex gap-2">
-              <button onClick={clearResponse} className="px-4 py-2 bg-slate-900 border border-slate-800 hover:bg-slate-800 text-slate-400 rounded-lg text-sm transition">उत्तर साफ करा</button>
-              <button onClick={toggleBookmark} className={`px-4 py-2 border rounded-lg text-sm transition flex items-center gap-1.5 ${palette[currentIdx]?.isBookmarked ? 'bg-purple-950/40 border-purple-600 text-purple-400' : 'bg-slate-900 border-slate-800 text-slate-400 hover:bg-slate-800'}`}><Bookmark className="w-4 h-4" /> रिव्ह्यूसाठी ठेवा</button>
+              <button onClick={clearResponse} disabled={questions.length === 0} className="px-4 py-2 bg-slate-900 border border-slate-800 hover:bg-slate-800 text-slate-400 rounded-lg text-sm transition">उत्तर साफ करा</button>
+              <button onClick={toggleBookmark} disabled={questions.length === 0} className={`px-4 py-2 border rounded-lg text-sm transition flex items-center gap-1.5 ${palette[currentIdx]?.isBookmarked ? 'bg-purple-950/40 border-purple-600 text-purple-400' : 'bg-slate-900 border-slate-800 text-slate-400 hover:bg-slate-800'}`}><Bookmark className="w-4 h-4" /> रिव्ह्यूसाठी ठेवा</button>
             </div>
             <div className="flex gap-3">
               <button onClick={handlePrev} disabled={currentIdx === 0} className="px-4 py-2 bg-slate-900 border border-slate-800 text-slate-300 rounded-lg hover:bg-slate-800 disabled:opacity-30 transition flex items-center gap-1 text-sm"><ChevronLeft className="w-4 h-4" /> मागे</button>
-              <button onClick={handleNext} disabled={currentIdx === total - 1} className="px-5 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-500 disabled:opacity-30 transition flex items-center gap-1 text-sm font-semibold">पुढील प्रश्न <ChevronRight className="w-4 h-4" /></button>
+              <button onClick={handleNext} disabled={currentIdx === total - 1 || questions.length === 0} className="px-5 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-500 disabled:opacity-30 transition flex items-center gap-1 text-sm font-semibold">पुढील प्रश्न <ChevronRight className="w-4 h-4" /></button>
             </div>
           </div>
         </div>
@@ -373,7 +378,7 @@ export default function RealExamEnvironment() {
               <Calculator className="w-4 h-4 text-blue-400" /> {showCalc ? "कॅल्क्युलेटर बंद करा" : "कॅल्क्युलेटर (Calculator)"}
             </button>
             {showCalc && <div className="p-2 bg-slate-950 border border-slate-800 rounded-lg text-center text-xs text-slate-400">🧮 ऑन-स्क्रीन कॅल्क्युलेटर केवळ सराव हेतूसाठी उपलब्ध आहे.</div>}
-            <button onClick={triggerAutoSubmit} disabled={isSubmitting} className="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-sm font-bold shadow-lg transition duration-150 flex items-center justify-center gap-2 border border-emerald-500 disabled:opacity-50">
+            <button onClick={triggerAutoSubmit} disabled={isSubmitting || questions.length === 0} className="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-sm font-bold shadow-lg transition duration-150 flex items-center justify-center gap-2 border border-emerald-500 disabled:opacity-50">
               <CheckCircle className="w-4 h-4" /> परीक्षा सबमिट करा (Submit)
             </button>
           </div>

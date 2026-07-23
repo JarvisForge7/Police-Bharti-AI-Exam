@@ -63,37 +63,6 @@ export default function StudentDashboard() {
   const [analytics, setAnalytics] = useState<UserAnalytics | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    async function loadDashboardData() {
-      try {
-        const [papersRes, analyticsRes] = await Promise.all([
-          api.getPapers(),
-          api.getAnalytics(),
-        ]);
-
-        if (papersRes && papersRes.success && papersRes.data) {
-          setPapers(papersRes.data);
-        } else {
-          // Database/API उपलब्ध नसल्यास डमी पेपर्स
-          setPapers([
-            { id: 1, title: 'पुणे जिल्हा पोलीस भरती २०२६ सराव पेपर ०१', total_marks: 100, duration_minutes: 90, district: 'पुणे', year: 2026 },
-            { id: 2, title: 'मुंबई शहर पोलीस शिपाई भरती २०२४ मूळ पेपर', total_marks: 100, duration_minutes: 90, district: 'मुंबई', year: 2024 },
-            { id: 3, title: 'नागपूर ग्रामीण पोलीस भरती २०२५ सराव पेपर', total_marks: 100, duration_minutes: 90, district: 'नागपूर', year: 2025 },
-          ]);
-        }
-
-        if (analyticsRes && analyticsRes.success) {
-          setAnalytics(analyticsRes.data);
-        }
-      } catch (err) {
-        console.error("Dashboard Data Fetch Error:", err);
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    loadDashboardData();
-  }, []);
 
   return (
     <div className="min-h-screen bg-[#080C14] text-slate-100 font-sans p-4 md:p-8">
